@@ -1,4 +1,4 @@
-/* index.js - V5 FINAL FIX (Deep Debugging) */
+/* index.js - V6 FINAL (Auto Chat + Power Control) */
 
 const { Client } = require('discord.js-selfbot-v13');
 const { joinVoiceChannel } = require('@discordjs/voice');
@@ -9,17 +9,11 @@ const path = require('path');
 require('dotenv').config();
 
 // ==========================================
-// 🛡️ ANTI-CRASH (HIỆN LỖI CHI TIẾT)
+// 🛡️ ANTI-CRASH
 // ==========================================
-process.on('unhandledRejection', (reason, p) => {
-    console.log(' [Anti-Crash] :: Lỗi Async:', reason); // Hiện rõ lỗi
-});
-process.on('uncaughtException', (err, origin) => {
-    console.log(' [Anti-Crash] :: Lỗi Hệ thống:', err);
-});
-process.on('uncaughtExceptionMonitor', (err, origin) => {
-    console.log(' [Anti-Crash] :: Monitor:', err);
-});
+process.on('unhandledRejection', (reason, p) => { console.log(' [Anti-Crash] :: Lỗi Async:', reason); });
+process.on('uncaughtException', (err, origin) => { console.log(' [Anti-Crash] :: Lỗi Hệ thống:', err); });
+process.on('uncaughtExceptionMonitor', (err, origin) => { console.log(' [Anti-Crash] :: Monitor:', err); });
 
 // ==========================================
 // ⚙️ SERVER SETUP
@@ -27,10 +21,10 @@ process.on('uncaughtExceptionMonitor', (err, origin) => {
 const app = express();
 let client = null;
 let voiceConnection = null;
+let autoChatTimer = null; // Timer cho Auto Chat
 
 const PORT = process.env.PORT || 3000;
 const SECRET_KEY = 'rpc-secret-' + Date.now();
-
 const CONFIG_FILE = path.join(__dirname, 'rpc-config.json');
 const AFK_LOGS_FILE = path.join(__dirname, 'afk-logs.json');
 const IMAGES_DIR = path.join(__dirname, 'rpc_images');
@@ -47,7 +41,13 @@ let currentConfig = {
     startTimestamp: false, button1Label: '', button1URL: '', button2Label: '', button2URL: '',
     status: 'online', deviceType: 'desktop',
     voiceEnabled: false, voiceGuildId: '', voiceChannelId: '', voiceVideo: false,
-    afkEnabled: false, afkMessage: 'Hiện tại tôi đang treo máy, vui lòng để lại lời nhắn.'
+    afkEnabled: false, afkMessage: 'Hiện tại tôi đang treo máy.',
+    
+    // AUTO CHAT CONFIG
+    autoChatEnabled: false,
+    autoChatChannelId: '',
+    autoChatInterval: 5, // giây
+    autoChatContent: 'Alo\n123\ntest\nspam nè\nchat linh tinh\nvớ vẩn' // Nội dung mặc định
 };
 
 let afkLogs = [];
@@ -67,6 +67,7 @@ async function startBot() {
     if (!tokenToUse) return console.log("⚠️ CHƯA CÓ TOKEN!");
 
     if (client) { try { client.destroy(); } catch(e) {} client = null; }
+    if (autoChatTimer) { clearInterval(autoChatTimer); autoChatTimer = null; }
 
     client = new Client({ checkUpdate: false });
 
@@ -75,6 +76,7 @@ async function startBot() {
         if(client.user) client.user.setPresence({ status: currentConfig.status });
         updateRPC();
         connectVoice();
+        startAutoChat(); // Bắt đầu Auto Chat nếu bật
     });
 
     client.on('voiceStateUpdate', async (o, n) => {
@@ -82,45 +84,62 @@ async function startBot() {
         if (!n.channelId && currentConfig.voiceEnabled) setTimeout(connectVoice, 5000);
     });
 
-    // --- HỆ THỐNG AFK (ĐÃ FIX SCOPE) ---
+    // AFK System
     client.on('messageCreate', async (message) => {
         if (!currentConfig.afkEnabled || message.author.id === client.user.id || message.mentions.everyone) return;
-
         if (message.mentions.has(client.user.id)) {
-            // Log ngay lập tức
-            const logEntry = {
-                id: Date.now(),
-                time: new Date().toLocaleString('vi-VN'),
-                user: message.author.tag,
-                server: message.guild ? message.guild.name : 'DM',
-                content: message.content
-            };
+            const logEntry = { id: Date.now(), time: new Date().toLocaleString('vi-VN'), user: message.author.tag, server: message.guild ? message.guild.name : 'DM', content: message.content };
             afkLogs.unshift(logEntry);
             if (afkLogs.length > 50) afkLogs.pop();
             saveAfkLogs();
 
-            // Trả lời (Bọc Try/Catch bên trong Timeout)
             setTimeout(async () => {
                 try {
-                    // Check quyền chat
-                    if (message.guild && !message.channel.permissionsFor(client.user).has("SEND_MESSAGES")) {
-                        console.log(`❌ [AFK Blocked] Không có quyền gửi tin tại: #${message.channel.name}`);
-                        return;
-                    }
-                    
-                    // Gửi tin
+                    if (message.guild && !message.channel.permissionsFor(client.user).has("SEND_MESSAGES")) return;
                     await message.channel.send(`${message.author} ${currentConfig.afkMessage}`);
-                    console.log(`💬 [AFK Sent] Đã trả lời ${message.author.tag}`);
-                } catch (err) {
-                    console.error("❌ [AFK Error] Chi tiết:", err.message);
-                    // Nếu lỗi 403/401 -> Token hoặc Quyền
-                    // Nếu lỗi 50001 -> Missing Access
-                }
+                    console.log(`💬 [AFK] Đã trả lời ${message.author.tag}`);
+                } catch (err) {}
             }, 1000);
         }
     });
 
     try { await client.login(tokenToUse); } catch (e) { console.error("❌ Login Error:", e.message); }
+}
+
+async function stopBot() {
+    if (autoChatTimer) { clearInterval(autoChatTimer); autoChatTimer = null; }
+    if (client) {
+        console.log("🛑 Đang dừng Bot...");
+        client.destroy();
+        client = null;
+    }
+}
+
+// --- AUTO CHAT FUNCTION ---
+function startAutoChat() {
+    if (autoChatTimer) clearInterval(autoChatTimer);
+    if (!client || !currentConfig.autoChatEnabled || !currentConfig.autoChatChannelId) return;
+
+    console.log(`💬 Auto Chat: BẬT (Kênh: ${currentConfig.autoChatChannelId}, ${currentConfig.autoChatInterval}s/msg)`);
+
+    autoChatTimer = setInterval(async () => {
+        if (!client || !client.user) return;
+        try {
+            const channel = client.channels.cache.get(currentConfig.autoChatChannelId);
+            if (!channel) return console.log(`⚠️ AutoChat: Không tìm thấy kênh ${currentConfig.autoChatChannelId}`);
+
+            // Lấy nội dung ngẫu nhiên
+            const lines = currentConfig.autoChatContent.split('\n').filter(line => line.trim() !== '');
+            if (lines.length === 0) return;
+            const randomLine = lines[Math.floor(Math.random() * lines.length)];
+
+            await channel.send(randomLine);
+            console.log(`📤 AutoChat sent: "${randomLine}"`);
+
+        } catch (err) {
+            console.error(`❌ AutoChat Error: ${err.message}`);
+        }
+    }, Math.max(2000, currentConfig.autoChatInterval * 1000)); // Tối thiểu 2 giây để tránh ban
 }
 
 async function connectVoice() {
@@ -132,41 +151,26 @@ async function connectVoice() {
         const guild = client.guilds.cache.get(currentConfig.voiceGuildId);
         const channel = guild?.channels.cache.get(currentConfig.voiceChannelId);
         if (!guild || !channel) return;
-
-        voiceConnection = joinVoiceChannel({
-            channelId: channel.id, guildId: guild.id, adapterCreator: guild.voiceAdapterCreator,
-            selfDeaf: false, selfMute: true, selfVideo: currentConfig.voiceVideo
-        });
-
-        if (currentConfig.voiceVideo) {
-            setTimeout(() => {
-                if(guild.shard) guild.shard.send({ op: 4, d: { guild_id: guild.id, channel_id: channel.id, self_mute: true, self_deaf: false, self_video: true } });
-            }, 2000);
-        }
+        voiceConnection = joinVoiceChannel({ channelId: channel.id, guildId: guild.id, adapterCreator: guild.voiceAdapterCreator, selfDeaf: false, selfMute: true, selfVideo: currentConfig.voiceVideo });
+        if (currentConfig.voiceVideo) { setTimeout(() => { if(guild.shard) guild.shard.send({ op: 4, d: { guild_id: guild.id, channel_id: channel.id, self_mute: true, self_deaf: false, self_video: true } }); }, 2000); }
         console.log(`🔊 Voice Connected: ${channel.name}`);
     } catch (e) { console.error('Voice Error:', e.message); }
 }
 
 function updateRPC() {
-    if (!client || !client.user) return;
-    if (!currentConfig.enabled) { client.user.setPresence({ activities: [], status: currentConfig.status }); return; }
-
+    if (!client || !client.user || !currentConfig.enabled) { if(client?.user) client.user.setPresence({ activities: [], status: currentConfig.status }); return; }
     try {
         const activity = {
-            name: currentConfig.name, type: currentConfig.type,
-            details: currentConfig.details || undefined, state: currentConfig.state || undefined,
-            assets: {}, timestamps: currentConfig.startTimestamp ? { start: Date.now() } : undefined
+            name: currentConfig.name, type: currentConfig.type, details: currentConfig.details || undefined, state: currentConfig.state || undefined, assets: {}, timestamps: currentConfig.startTimestamp ? { start: Date.now() } : undefined
         };
         if (currentConfig.type === 'STREAMING') activity.url = 'https://www.twitch.tv/discord';
         if (currentConfig.largeImage) { activity.assets.large_image = currentConfig.largeImage; if(currentConfig.largeText) activity.assets.large_text = currentConfig.largeText; }
         if (currentConfig.smallImage) { activity.assets.small_image = currentConfig.smallImage; if(currentConfig.smallText) activity.assets.small_text = currentConfig.smallText; }
         if (Object.keys(activity.assets).length === 0) delete activity.assets;
-        
         activity.buttons = [];
         if (currentConfig.button1Label && currentConfig.button1URL) activity.buttons.push({ label: currentConfig.button1Label, url: currentConfig.button1URL });
         if (currentConfig.button2Label && currentConfig.button2URL) activity.buttons.push({ label: currentConfig.button2Label, url: currentConfig.button2URL });
         if (activity.buttons.length === 0) delete activity.buttons;
-
         client.user.setPresence({ activities: [activity], status: currentConfig.status });
     } catch (e) {}
 }
@@ -193,18 +197,39 @@ app.post('/api/login', (req, res) => {
 });
 app.post('/api/logout', (req, res) => { res.clearCookie('auth'); res.json({ success: true }); });
 
-app.get('/api/config', checkAuth, (req, res) => res.json(currentConfig));
+app.get('/api/config', checkAuth, (req, res) => {
+    // Gửi thêm trạng thái bot đang chạy hay tắt
+    const statusData = { ...currentConfig, isRunning: !!client };
+    res.json(statusData);
+});
+
+// API Bật/Tắt Bot (Nguồn)
+app.post('/api/power', checkAuth, async (req, res) => {
+    const { action } = req.body; // 'start' hoặc 'stop'
+    if (action === 'stop') {
+        await stopBot();
+        res.json({ success: true, message: "Đã tắt Bot." });
+    } else {
+        await startBot();
+        res.json({ success: true, message: "Đã bật Bot." });
+    }
+});
 
 app.post('/api/config', checkAuth, async (req, res) => {
     const oldToken = currentConfig.token;
     const oldVoice = { ...currentConfig };
+    
     currentConfig = { ...currentConfig, ...req.body };
     saveConfig();
 
-    if (req.body.token && req.body.token !== oldToken) await startBot();
-    else if (currentConfig.voiceEnabled !== oldVoice.voiceEnabled || currentConfig.voiceChannelId !== oldVoice.voiceChannelId || currentConfig.voiceVideo !== oldVoice.voiceVideo) await connectVoice();
-    
-    updateRPC();
+    if (client) { // Chỉ update nếu bot đang chạy
+        if (req.body.token && req.body.token !== oldToken) await startBot();
+        else {
+            if (currentConfig.voiceEnabled !== oldVoice.voiceEnabled || currentConfig.voiceChannelId !== oldVoice.voiceChannelId || currentConfig.voiceVideo !== oldVoice.voiceVideo) await connectVoice();
+            updateRPC();
+            startAutoChat(); // Update Auto Chat
+        }
+    }
     res.json({ success: true });
 });
 
@@ -214,7 +239,7 @@ app.delete('/api/afklogs', checkAuth, (req, res) => { afkLogs = []; saveAfkLogs(
 app.post('/api/device', checkAuth, async (req, res) => {
     currentConfig.deviceType = req.body.deviceType;
     saveConfig();
-    await startBot();
+    if(client) await startBot();
     res.json({ success: true });
 });
 
