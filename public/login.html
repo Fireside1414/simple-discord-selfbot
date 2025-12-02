@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <title>Login SelfBot</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { background: #0f172a; color: white; display: flex; height: 100vh; align-items: center; justify-content: center; font-family: sans-serif; }
+        .box { background: #1e293b; padding: 2rem; border-radius: 10px; width: 300px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; background: #334155; border: none; color: white; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #3b82f6; border: none; color: white; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>🔒 Đăng Nhập</h2>
+        <input type="text" id="user" placeholder="Username (admin)">
+        <input type="password" id="pass" placeholder="Password">
+        <button onclick="login()">Vào Dashboard</button>
+    </div>
+    <script>
+        async function login() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: u, password: p})
+            });
+            if(res.ok) window.location.href = '/';
+            else alert('Sai thông tin!');
+        }
+    </script>
+</body>
+</html>
