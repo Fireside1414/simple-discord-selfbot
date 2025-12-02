@@ -8,39 +8,28 @@
         :root { --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --accent: #3b82f6; --modal-bg: rgba(0,0,0,0.8); --success: #22c55e; --danger: #ef4444; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
         .container { max-width: 900px; margin: 0 auto; }
-        
-        /* Header */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .power-btn { padding: 8px 16px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
         .power-on { background: rgba(34, 197, 94, 0.2); color: var(--success); border: 1px solid var(--success); }
         .power-off { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
-
-        /* Navbar */
         .nav { display: flex; gap: 10px; margin-bottom: 20px; background: var(--card); padding: 10px; border-radius: 10px; flex-wrap: wrap;}
         .nav-btn { background: transparent; border: none; color: #94a3b8; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 5px; flex: 1; min-width: 100px; }
         .nav-btn.active { background: var(--accent); color: white; }
-        
         .section { display: none; }
         .section.active { display: block; }
         .card { background: var(--card); padding: 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #334155; }
-        
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: 600; color: #cbd5e1; font-size: 0.9em; }
         input, select, textarea { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 5px; box-sizing: border-box; }
         textarea { resize: vertical; min-height: 100px; font-family: monospace; }
-        
         .row { display: flex; gap: 15px; flex-wrap: wrap; }
         .col { flex: 1; min-width: 200px; }
-        
         .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s;}
         .btn:hover { opacity: 0.9; }
         .btn-primary { background: var(--accent); width: 100%; margin-top: 15px; padding: 12px; font-size: 1rem; }
         .btn-select { background: #475569; margin-top: 5px; width: 100%; font-size: 0.85em; }
-        
         .switch-row { display: flex; align-items: center; justify-content: space-between; background: #334155; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
         input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; }
-
-        /* Logs & Modal */
         .log-list { max-height: 400px; overflow-y: auto; }
         .log-item { background: #0f172a; padding: 12px; margin-bottom: 8px; border-left: 4px solid var(--accent); border-radius: 4px; }
         .log-meta { font-size: 0.8rem; color: #94a3b8; display: flex; justify-content: space-between; margin-bottom: 5px; }
@@ -56,6 +45,19 @@
         .grid-item img { width: 100%; height: 100px; object-fit: cover; display: block; }
         .grid-item p { margin: 0; font-size: 0.75rem; text-align: center; padding: 2px; background: #000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .close-btn { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; color: #fff; }
+        
+        /* TIMER STYLE */
+        .voice-timer {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 15px;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -68,17 +70,15 @@
         <div class="nav">
             <button class="nav-btn active" onclick="showTab('rpc')">RPC</button>
             <button class="nav-btn" onclick="showTab('voice')">Voice</button>
-            <button class="nav-btn" onclick="showTab('autochat')">Auto Chat</button> <button class="nav-btn" onclick="showTab('afk')">AFK</button>
+            <button class="nav-btn" onclick="showTab('autochat')">Auto Chat</button>
+            <button class="nav-btn" onclick="showTab('afk')">AFK</button>
             <button class="nav-btn" onclick="logout()" style="color: #ef4444; flex: 0;">Exit</button>
         </div>
 
         <div id="rpc" class="section active">
             <div class="card">
                 <div class="switch-row"><span>Bật trạng thái RPC</span><input type="checkbox" id="enabled"></div>
-                <div class="row">
-                    <div class="col"><label>Loại</label><select id="type"><option value="PLAYING">Playing</option><option value="STREAMING">Streaming</option><option value="LISTENING">Listening</option><option value="WATCHING">Watching</option><option value="COMPETING">Competing</option></select></div>
-                    <div class="col"><label>Tên</label><input type="text" id="name"></div>
-                </div>
+                <div class="row"><div class="col"><label>Loại</label><select id="type"><option value="PLAYING">Playing</option><option value="STREAMING">Streaming</option><option value="LISTENING">Listening</option><option value="WATCHING">Watching</option><option value="COMPETING">Competing</option></select></div><div class="col"><label>Tên</label><input type="text" id="name"></div></div>
                 <div class="row" style="margin-top: 10px;"><div class="col"><label>Chi tiết</label><input type="text" id="details"></div><div class="col"><label>Trạng thái</label><input type="text" id="state"></div></div>
                 <div class="switch-row" style="margin-top: 15px;"><span>⏳ Timestamp</span><input type="checkbox" id="startTimestamp"></div>
             </div>
@@ -106,6 +106,11 @@
                 <div class="switch-row"><span>Tự động vào Voice</span><input type="checkbox" id="voiceEnabled"></div>
                 <div class="row"><div class="col"><label>Guild ID</label><input type="text" id="voiceGuildId"></div><div class="col"><label>Channel ID</label><input type="text" id="voiceChannelId"></div></div>
                 <div class="switch-row" style="margin-top:15px"><span>🎥 Bật Camera ảo</span><input type="checkbox" id="voiceVideo"></div>
+                
+                <div id="voiceTimerContainer" style="display:none;">
+                    <div class="voice-timer">⏱️ Thời gian treo: <span id="voiceTimer">00:00:00</span></div>
+                </div>
+
                 <button class="btn btn-primary" onclick="saveConfig()">💾 LƯU VOICE</button>
             </div>
             <div class="card">
@@ -116,24 +121,12 @@
 
         <div id="autochat" class="section">
             <div class="card">
-                <h3 style="margin-top:0">💬 Auto Chat Vớ Vẩn</h3>
+                <h3 style="margin-top:0">💬 Auto Chat</h3>
                 <div class="switch-row"><span>Bật Auto Chat</span><input type="checkbox" id="autoChatEnabled"></div>
-                
-                <div class="form-group">
-                    <label>ID Kênh Chat (Channel ID)</label>
-                    <input type="text" id="autoChatChannelId" placeholder="Nhập ID kênh muốn spam...">
-                </div>
-
-                <div class="form-group">
-                    <label>Thời gian chờ (Giây)</label>
-                    <input type="number" id="autoChatInterval" min="2" value="5">
-                </div>
-
-                <div class="form-group">
-                    <label>Nội dung (Mỗi dòng 1 câu)</label>
-                    <textarea id="autoChatContent" placeholder="Nhập các câu vớ vẩn vào đây..."></textarea>
-                </div>
-                <button class="btn btn-primary" onclick="saveConfig()">💾 LƯU & CHẠY AUTO CHAT</button>
+                <div class="form-group"><label>ID Kênh Chat</label><input type="text" id="autoChatChannelId" placeholder="Nhập ID kênh..."></div>
+                <div class="form-group"><label>Thời gian chờ (Giây)</label><input type="number" id="autoChatInterval" min="2" value="5"></div>
+                <div class="form-group"><label>Nội dung (Mỗi dòng 1 câu)</label><textarea id="autoChatContent" placeholder="Nhập nội dung..."></textarea></div>
+                <button class="btn btn-primary" onclick="saveConfig()">💾 LƯU AUTO CHAT</button>
             </div>
         </div>
 
@@ -156,6 +149,8 @@
     <script>
         let currentTargetInput = null;
         let isBotRunning = false;
+        let voiceJoinTime = null;
+        let timerInterval = null;
 
         const configKeys = ['token','type','name','details','state','largeImage','largeText','smallImage','smallText','button1Label','button1URL','button2Label','button2URL','voiceGuildId','voiceChannelId','afkMessage','autoChatChannelId','autoChatInterval','autoChatContent'];
         const checkboxKeys = ['enabled','startTimestamp','voiceEnabled','voiceVideo','afkEnabled','autoChatEnabled'];
@@ -167,7 +162,10 @@
                 const config = await res.json();
                 
                 isBotRunning = config.isRunning;
+                voiceJoinTime = config.voiceJoinedAt; // Lấy thời gian từ server
+                
                 updatePowerBtn();
+                startVoiceTimer(); // Bắt đầu đếm
 
                 configKeys.forEach(k => { if(document.getElementById(k)) document.getElementById(k).value = config[k] || ''; });
                 checkboxKeys.forEach(k => { if(document.getElementById(k)) document.getElementById(k).checked = !!config[k]; });
@@ -177,28 +175,58 @@
             } catch(e) {}
         }
 
+        // --- TIMER LOGIC ---
+        function startVoiceTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            const container = document.getElementById('voiceTimerContainer');
+            const timerEl = document.getElementById('voiceTimer');
+
+            if (!voiceJoinTime || !isBotRunning) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'block';
+            
+            timerInterval = setInterval(() => {
+                const now = Date.now();
+                const diff = now - voiceJoinTime;
+                
+                // Tính toán thời gian
+                const seconds = Math.floor((diff / 1000) % 60);
+                const minutes = Math.floor((diff / (1000 * 60)) % 60);
+                const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+                let timeString = '';
+
+                // Logic hiển thị: Quá 24h -> Ngày, Quá 60p -> Giờ
+                if (days > 0) {
+                    timeString = `${days} ngày ${hours} giờ ${minutes} phút`;
+                } else if (hours > 0) {
+                    timeString = `${hours} giờ ${minutes} phút ${seconds} giây`;
+                } else if (minutes > 0) {
+                    timeString = `${minutes} phút ${seconds} giây`;
+                } else {
+                    timeString = `${seconds} giây`;
+                }
+
+                timerEl.innerText = timeString;
+            }, 1000);
+        }
+
         function updatePowerBtn() {
             const btn = document.getElementById('powerBtn');
-            if (isBotRunning) {
-                btn.className = 'power-btn power-on';
-                btn.innerText = '🟢 ONLINE';
-            } else {
-                btn.className = 'power-btn power-off';
-                btn.innerText = '🔴 OFFLINE';
-            }
+            if (isBotRunning) { btn.className = 'power-btn power-on'; btn.innerText = '🟢 ONLINE'; } 
+            else { btn.className = 'power-btn power-off'; btn.innerText = '🔴 OFFLINE'; }
         }
 
         async function togglePower() {
             const action = isBotRunning ? 'stop' : 'start';
             if(!confirm(`Bạn có chắc muốn ${action === 'stop' ? 'TẮT' : 'BẬT'} Bot không?`)) return;
-            
-            const btn = document.getElementById('powerBtn');
-            btn.innerText = 'Processing...';
-            
+            const btn = document.getElementById('powerBtn'); btn.innerText = '...';
             await fetch('/api/power', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action }) });
-            isBotRunning = !isBotRunning;
-            updatePowerBtn();
-            alert(`Đã ${action === 'stop' ? 'Tắt' : 'Bật'} Bot thành công!`);
+            setTimeout(() => location.reload(), 2000);
         }
 
         async function loadLogs() {
@@ -210,11 +238,7 @@
                 container.innerHTML = logs.map(log => `<div class="log-item"><div class="log-meta"><span>🕒 ${log.time}</span><span>${log.server}</span></div><div class="log-content"><span class="log-user">${log.user}</span>: ${log.content}</div></div>`).join('');
             } catch(e) {}
         }
-        async function clearLogs() {
-            if(!confirm("Xóa hết log?")) return;
-            await fetch('/api/afklogs', { method: 'DELETE' });
-            loadLogs();
-        }
+        async function clearLogs() { if(!confirm("Xóa hết log?")) return; await fetch('/api/afklogs', { method: 'DELETE' }); loadLogs(); }
 
         function updatePreview(type) { const val = document.getElementById(type).value; const img = document.getElementById('preview-' + type); if(val) { img.src = val; img.style.display = 'block'; } else { img.style.display = 'none'; } }
         async function openImageSelector(target) {
@@ -230,7 +254,7 @@
             checkboxKeys.forEach(k => data[k] = document.getElementById(k).checked);
             await fetch('/api/config', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
             alert('✅ Đã lưu!');
-            loadData(); // Reload để cập nhật trạng thái
+            loadData();
         }
 
         function showTab(id) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); event.currentTarget.classList.add('active'); }
