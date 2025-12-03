@@ -37,27 +37,25 @@
         .log-user { color: #f59e0b; font-weight: bold; }
         .img-preview-box { width: 80px; height: 80px; background: #000; border-radius: 8px; margin-top: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #475569; flex-shrink: 0; }
         .img-preview-box img { max-width: 100%; max-height: 100%; object-fit: cover; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); z-index: 9999; align-items: center; justify-content: center; }
-        .modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; position: relative; }
-        .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 15px; }
-        .grid-item { cursor: pointer; border: 2px solid transparent; border-radius: 5px; overflow: hidden; position: relative; }
-        .grid-item:hover { border-color: var(--accent); }
-        .grid-item img { width: 100%; height: 100px; object-fit: cover; display: block; }
-        .grid-item p { margin: 0; font-size: 0.75rem; text-align: center; padding: 2px; background: #000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; color: #fff; }
         
         /* TIMER STYLE */
-        .voice-timer {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #22c55e;
-            background: rgba(34, 197, 94, 0.1);
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            margin-top: 15px;
-            border: 1px solid rgba(34, 197, 94, 0.3);
-        }
+        .voice-timer { font-size: 1.2rem; font-weight: bold; color: #22c55e; background: rgba(34, 197, 94, 0.1); padding: 10px; border-radius: 8px; text-align: center; margin-top: 15px; border: 1px solid rgba(34, 197, 94, 0.3); }
+
+        /* MODAL STYLES (NEW) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); z-index: 9999; align-items: center; justify-content: center; }
+        .modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 90%; max-width: 600px; max-height: 85vh; overflow-y: auto; position: relative; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; color: #fff; }
+        
+        .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 10px; }
+        .grid-item { cursor: pointer; border: 2px solid transparent; border-radius: 5px; overflow: hidden; position: relative; background: #000; }
+        .grid-item:hover { border-color: var(--accent); }
+        .grid-item img { width: 100%; height: 80px; object-fit: cover; display: block; }
+        .grid-item p { margin: 0; font-size: 0.7rem; text-align: center; padding: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        
+        .delete-btn { position: absolute; top: 2px; right: 2px; background: rgba(239, 68, 68, 0.9); color: white; border: none; border-radius: 3px; width: 20px; height: 20px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .delete-btn:hover { background: #ff0000; }
+
+        .modal-section-title { font-size: 0.9rem; color: #94a3b8; margin-top: 15px; border-bottom: 1px solid #334155; padding-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -84,9 +82,9 @@
             </div>
             <div class="card">
                 <h4 style="margin-top:0">🖼️ Hình ảnh</h4>
-                <div class="row" style="align-items: center;"><div class="col"><label>Ảnh Lớn</label><input type="text" id="largeImage"><input type="text" id="largeText" placeholder="Tooltip" style="margin-top:5px"><button class="btn btn-select" onclick="openImageSelector('largeImage')">📂 Chọn ảnh</button></div><div class="img-preview-box"><img id="preview-largeImage"></div></div>
+                <div class="row" style="align-items: center;"><div class="col"><label>Ảnh Lớn</label><input type="text" id="largeImage"><input type="text" id="largeText" placeholder="Tooltip" style="margin-top:5px"><button class="btn btn-select" onclick="openImageSelector('largeImage')">📂 Quản lý & Chọn ảnh</button></div><div class="img-preview-box"><img id="preview-largeImage"></div></div>
                 <hr style="border-color: #334155; margin: 15px 0;">
-                <div class="row" style="align-items: center;"><div class="col"><label>Ảnh Nhỏ</label><input type="text" id="smallImage"><input type="text" id="smallText" placeholder="Tooltip" style="margin-top:5px"><button class="btn btn-select" onclick="openImageSelector('smallImage')">📂 Chọn ảnh</button></div><div class="img-preview-box"><img id="preview-smallImage"></div></div>
+                <div class="row" style="align-items: center;"><div class="col"><label>Ảnh Nhỏ</label><input type="text" id="smallImage"><input type="text" id="smallText" placeholder="Tooltip" style="margin-top:5px"><button class="btn btn-select" onclick="openImageSelector('smallImage')">📂 Quản lý & Chọn ảnh</button></div><div class="img-preview-box"><img id="preview-smallImage"></div></div>
             </div>
             <div class="card">
                 <h4 style="margin-top:0">🔘 Nút bấm</h4>
@@ -106,11 +104,7 @@
                 <div class="switch-row"><span>Tự động vào Voice</span><input type="checkbox" id="voiceEnabled"></div>
                 <div class="row"><div class="col"><label>Guild ID</label><input type="text" id="voiceGuildId"></div><div class="col"><label>Channel ID</label><input type="text" id="voiceChannelId"></div></div>
                 <div class="switch-row" style="margin-top:15px"><span>🎥 Bật Camera ảo</span><input type="checkbox" id="voiceVideo"></div>
-                
-                <div id="voiceTimerContainer" style="display:none;">
-                    <div class="voice-timer">⏱️ Thời gian treo: <span id="voiceTimer">00:00:00</span></div>
-                </div>
-
+                <div id="voiceTimerContainer" style="display:none;"><div class="voice-timer">⏱️ Treo: <span id="voiceTimer">00:00:00</span></div></div>
                 <button class="btn btn-primary" onclick="saveConfig()">💾 LƯU VOICE</button>
             </div>
             <div class="card">
@@ -144,7 +138,23 @@
         </div>
     </div>
 
-    <div id="imageModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal()">&times;</span><h3>Chọn ảnh</h3><div id="grid-container" class="image-grid"></div></div></div>
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h3 style="margin-top:0">📂 Thư viện ảnh</h3>
+            
+            <div style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid #334155; padding-bottom:15px;">
+                <input type="text" id="newImageUrl" placeholder="Dán link ảnh online (https://...) vào đây">
+                <button class="btn" style="background:var(--accent); width: 100px;" onclick="saveNewUrl()">➕ Lưu</button>
+            </div>
+
+            <div class="modal-section-title">☁️ Ảnh đã lưu (Saved URLs)</div>
+            <div id="saved-grid" class="image-grid"><p style="color:#64748b; font-size:0.8rem">Chưa có ảnh nào.</p></div>
+
+            <div class="modal-section-title" style="margin-top:20px">💻 Ảnh trong máy (Local Files)</div>
+            <div id="local-grid" class="image-grid"><p style="color:#64748b; font-size:0.8rem">Thư mục trống.</p></div>
+        </div>
+    </div>
 
     <script>
         let currentTargetInput = null;
@@ -162,10 +172,10 @@
                 const config = await res.json();
                 
                 isBotRunning = config.isRunning;
-                voiceJoinTime = config.voiceJoinedAt; // Lấy thời gian từ server
+                voiceJoinTime = config.voiceJoinedAt;
                 
                 updatePowerBtn();
-                startVoiceTimer(); // Bắt đầu đếm
+                startVoiceTimer();
 
                 configKeys.forEach(k => { if(document.getElementById(k)) document.getElementById(k).value = config[k] || ''; });
                 checkboxKeys.forEach(k => { if(document.getElementById(k)) document.getElementById(k).checked = !!config[k]; });
@@ -181,36 +191,21 @@
             const container = document.getElementById('voiceTimerContainer');
             const timerEl = document.getElementById('voiceTimer');
 
-            if (!voiceJoinTime || !isBotRunning) {
-                container.style.display = 'none';
-                return;
-            }
+            if (!voiceJoinTime || !isBotRunning) { container.style.display = 'none'; return; }
 
             container.style.display = 'block';
-            
             timerInterval = setInterval(() => {
-                const now = Date.now();
-                const diff = now - voiceJoinTime;
-                
-                // Tính toán thời gian
+                const diff = Date.now() - voiceJoinTime;
                 const seconds = Math.floor((diff / 1000) % 60);
                 const minutes = Math.floor((diff / (1000 * 60)) % 60);
                 const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
                 let timeString = '';
-
-                // Logic hiển thị: Quá 24h -> Ngày, Quá 60p -> Giờ
-                if (days > 0) {
-                    timeString = `${days} ngày ${hours} giờ ${minutes} phút`;
-                } else if (hours > 0) {
-                    timeString = `${hours} giờ ${minutes} phút ${seconds} giây`;
-                } else if (minutes > 0) {
-                    timeString = `${minutes} phút ${seconds} giây`;
-                } else {
-                    timeString = `${seconds} giây`;
-                }
-
+                if (days > 0) timeString = `${days} ngày ${hours} giờ ${minutes} phút`;
+                else if (hours > 0) timeString = `${hours} giờ ${minutes} phút ${seconds} giây`;
+                else if (minutes > 0) timeString = `${minutes} phút ${seconds} giây`;
+                else timeString = `${seconds} giây`;
                 timerEl.innerText = timeString;
             }, 1000);
         }
@@ -241,10 +236,64 @@
         async function clearLogs() { if(!confirm("Xóa hết log?")) return; await fetch('/api/afklogs', { method: 'DELETE' }); loadLogs(); }
 
         function updatePreview(type) { const val = document.getElementById(type).value; const img = document.getElementById('preview-' + type); if(val) { img.src = val; img.style.display = 'block'; } else { img.style.display = 'none'; } }
+        
+        // --- IMAGE MANAGER LOGIC ---
         async function openImageSelector(target) {
-            currentTargetInput = target; const modal = document.getElementById('imageModal'); const grid = document.getElementById('grid-container'); modal.style.display = 'flex'; grid.innerHTML = '<p>Loading...</p>';
-            try { const res = await fetch('/api/list-images'); const images = await res.json(); grid.innerHTML = images.map(img => `<div class="grid-item" onclick="selectImage('${window.location.origin}/images/${img}')"><img src="/images/${img}"><p>${img}</p></div>`).join(''); } catch(e) {}
+            currentTargetInput = target;
+            const modal = document.getElementById('imageModal');
+            modal.style.display = 'flex';
+            loadImages();
         }
+
+        async function loadImages() {
+            const savedGrid = document.getElementById('saved-grid');
+            const localGrid = document.getElementById('local-grid');
+            savedGrid.innerHTML = 'Loading...'; localGrid.innerHTML = 'Loading...';
+
+            try {
+                const res = await fetch('/api/images');
+                const data = await res.json();
+
+                // Render Saved URLs
+                if(data.savedUrls.length === 0) savedGrid.innerHTML = '<p style="color:#64748b; font-size:0.8rem">Chưa lưu ảnh nào.</p>';
+                else {
+                    savedGrid.innerHTML = data.savedUrls.map(url => `
+                        <div class="grid-item">
+                            <button class="delete-btn" onclick="deleteUrl('${url}'); event.stopPropagation();">×</button>
+                            <div onclick="selectImage('${url}')">
+                                <img src="${url}">
+                                <p>${url}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // Render Local Files
+                if(data.local.length === 0) localGrid.innerHTML = '<p style="color:#64748b; font-size:0.8rem">Thư mục rpc_images trống.</p>';
+                else {
+                    localGrid.innerHTML = data.local.map(img => {
+                        const url = window.location.origin + '/images/' + img;
+                        return `<div class="grid-item" onclick="selectImage('${url}')"><img src="${url}"><p>${img}</p></div>`;
+                    }).join('');
+                }
+
+            } catch(e) { console.error(e); }
+        }
+
+        async function saveNewUrl() {
+            const url = document.getElementById('newImageUrl').value;
+            if(!url) return alert("Chưa nhập link!");
+            await fetch('/api/images/url', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ url }) });
+            document.getElementById('newImageUrl').value = '';
+            loadImages();
+        }
+
+        async function deleteUrl(url) {
+            if(!confirm("Xóa ảnh này khỏi danh sách lưu?")) return;
+            await fetch('/api/images/url', { method: 'DELETE', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ url }) });
+            loadImages();
+        }
+
         function selectImage(url) { if(currentTargetInput) { document.getElementById(currentTargetInput).value = url; updatePreview(currentTargetInput); } closeModal(); }
         function closeModal() { document.getElementById('imageModal').style.display = 'none'; }
 
