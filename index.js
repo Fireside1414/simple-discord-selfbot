@@ -1,4 +1,4 @@
-/* index.js - V8 FINAL (Cookie Fix + All Features) */
+/* index.js - V9 FINAL (Image URL Manager Added) */
 
 const { Client } = require('discord.js-selfbot-v13');
 const { joinVoiceChannel } = require('@discordjs/voice');
@@ -25,12 +25,11 @@ let autoChatTimer = null;
 let voiceJoinedAt = null;
 
 const PORT = process.env.PORT || 3000;
-
-// 🔥 QUAN TRỌNG: Dùng key cố định để giữ đăng nhập khi restart bot
 const SECRET_KEY = 'rpc-secret-super-secure-key-2024'; 
 
 const CONFIG_FILE = path.join(__dirname, 'rpc-config.json');
 const AFK_LOGS_FILE = path.join(__dirname, 'afk-logs.json');
+const IMAGE_URLS_FILE = path.join(__dirname, 'image-urls.json'); // File lưu link ảnh
 const IMAGES_DIR = path.join(__dirname, 'rpc_images');
 
 const WEB_USER = process.env.AUTH_USERNAME || 'admin';
@@ -50,12 +49,16 @@ let currentConfig = {
 };
 
 let afkLogs = [];
+let savedImageUrls = []; // Danh sách link ảnh đã lưu
 
+// --- LOAD DATA ---
 if (fs.existsSync(CONFIG_FILE)) { try { currentConfig = { ...currentConfig, ...JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')) }; } catch (e) {} }
 if (fs.existsSync(AFK_LOGS_FILE)) { try { afkLogs = JSON.parse(fs.readFileSync(AFK_LOGS_FILE, 'utf8')); } catch (e) {} }
+if (fs.existsSync(IMAGE_URLS_FILE)) { try { savedImageUrls = JSON.parse(fs.readFileSync(IMAGE_URLS_FILE, 'utf8')); } catch (e) {} }
 
 function saveConfig() { fs.writeFileSync(CONFIG_FILE, JSON.stringify(currentConfig, null, 2)); }
 function saveAfkLogs() { fs.writeFileSync(AFK_LOGS_FILE, JSON.stringify(afkLogs, null, 2)); }
+function saveImageUrls() { fs.writeFileSync(IMAGE_URLS_FILE, JSON.stringify(savedImageUrls, null, 2)); }
 
 // ==========================================
 // 🤖 BOT LOGIC
@@ -88,7 +91,6 @@ async function startBot() {
         }
     });
 
-    // AFK System
     client.on('messageCreate', async (message) => {
         if (!currentConfig.afkEnabled || message.author.id === client.user.id || message.mentions.everyone) return;
         if (message.mentions.has(client.user.id)) {
@@ -142,9 +144,7 @@ async function connectVoice() {
         if (!guild || !channel) return;
         
         voiceConnection = joinVoiceChannel({ channelId: channel.id, guildId: guild.id, adapterCreator: guild.voiceAdapterCreator, selfDeaf: false, selfMute: true, selfVideo: currentConfig.voiceVideo });
-        
         voiceJoinedAt = Date.now(); 
-
         if (currentConfig.voiceVideo) { setTimeout(() => { if(guild.shard) guild.shard.send({ op: 4, d: { guild_id: guild.id, channel_id: channel.id, self_mute: true, self_deaf: false, self_video: true } }); }, 2000); }
         console.log(`🔊 Voice Connected: ${channel.name}`);
     } catch (e) { console.error('Voice Error:', e.message); }
@@ -169,7 +169,7 @@ function updateRPC() {
 }
 
 // ==========================================
-// 🌐 WEB API (COOKIE FIXED)
+// 🌐 WEB API
 // ==========================================
 app.use(express.json());
 app.use(cookieParser());
@@ -183,9 +183,7 @@ function checkAuth(req, res, next) {
 
 app.post('/api/login', (req, res) => {
     if (req.body.username === WEB_USER && req.body.password === WEB_PASS) {
-        // 🔥 FIX: Lưu Cookie 30 ngày (30 * 24h * 60m * 60s * 1000ms)
-        const maxAge = 30 * 24 * 60 * 60 * 1000; 
-        res.cookie('auth', SECRET_KEY, { httpOnly: true, maxAge: maxAge });
+        res.cookie('auth', SECRET_KEY, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
         return res.json({ success: true });
     }
     res.status(401).json({ error: 'Sai mật khẩu' });
@@ -193,7 +191,6 @@ app.post('/api/login', (req, res) => {
 
 app.post('/api/logout', (req, res) => { res.clearCookie('auth'); res.json({ success: true }); });
 
-// API Config
 app.get('/api/config', checkAuth, (req, res) => {
     const statusData = { ...currentConfig, isRunning: !!client, voiceJoinedAt };
     res.json(statusData);
@@ -232,11 +229,40 @@ app.post('/api/device', checkAuth, async (req, res) => {
     res.json({ success: true });
 });
 
-app.get('/api/list-images', checkAuth, (req, res) => {
-    fs.readdir(IMAGES_DIR, (err, files) => {
-        if (err) return res.json([]);
-        res.json(files.filter(f => /\.(jpg|png|gif)$/i.test(f)));
+// --- API QUẢN LÝ ẢNH (MỚI) ---
+
+// Lấy danh sách ảnh Local + Online URLs
+app.get('/api/images', checkAuth, (req, res) => {
+    // Đọc ảnh local
+    let localImages = [];
+    try {
+        localImages = fs.readdirSync(IMAGES_DIR).filter(f => /\.(jpg|png|gif)$/i.test(f));
+    } catch(e) {}
+
+    res.json({
+        local: localImages,
+        savedUrls: savedImageUrls
     });
+});
+
+// Thêm URL mới
+app.post('/api/images/url', checkAuth, (req, res) => {
+    const { url } = req.body;
+    if (!url || !url.startsWith('http')) return res.status(400).json({ error: "Link không hợp lệ" });
+    
+    if (!savedImageUrls.includes(url)) {
+        savedImageUrls.push(url);
+        saveImageUrls();
+    }
+    res.json({ success: true, savedUrls: savedImageUrls });
+});
+
+// Xóa URL
+app.delete('/api/images/url', checkAuth, (req, res) => {
+    const { url } = req.body;
+    savedImageUrls = savedImageUrls.filter(u => u !== url);
+    saveImageUrls();
+    res.json({ success: true, savedUrls: savedImageUrls });
 });
 
 app.listen(PORT, () => { console.log(`🌐 Web UI: http://localhost:${PORT}`); startBot(); });
