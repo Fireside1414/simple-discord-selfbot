@@ -2,317 +2,364 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Ultimate SelfBot Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Multi-Account SelfBot Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --accent: #3b82f6; --modal-bg: rgba(0,0,0,0.8); --success: #22c55e; --danger: #ef4444; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .power-btn { padding: 8px 16px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
-        .power-on { background: rgba(34, 197, 94, 0.2); color: var(--success); border: 1px solid var(--success); }
-        .power-off { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
-        .nav { display: flex; gap: 10px; margin-bottom: 20px; background: var(--card); padding: 10px; border-radius: 10px; flex-wrap: wrap;}
-        .nav-btn { background: transparent; border: none; color: #94a3b8; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 5px; flex: 1; min-width: 100px; }
-        .nav-btn.active { background: var(--accent); color: white; }
-        .section { display: none; }
-        .section.active { display: block; }
-        .card { background: var(--card); padding: 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #334155; }
+        :root { --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --accent: #3b82f6; --sidebar: #020617; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 260px; background: var(--sidebar); display: flex; flex-direction: column; border-right: 1px solid #334155; flex-shrink: 0; z-index: 10; transition: transform 0.3s ease; }
+        .sidebar-header { padding: 20px; font-weight: bold; font-size: 1.2rem; text-align: center; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        .account-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .account-item { display: flex; align-items: center; padding: 12px; margin-bottom: 5px; cursor: pointer; border-radius: 8px; transition: 0.2s; border: 1px solid transparent; background: rgba(255,255,255,0.03); }
+        .account-item:hover { background: #1e293b; }
+        .account-item.active { background: #1e293b; border-color: var(--accent); }
+        .acc-avatar { width: 36px; height: 36px; border-radius: 50%; background: #334155; margin-right: 12px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; flex-shrink: 0; }
+        .acc-info { display: flex; flex-direction: column; overflow: hidden; }
+        .acc-name { font-weight: bold; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .acc-status { font-size: 0.75rem; color: #94a3b8; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .dot-green { background: #22c55e; } .dot-red { background: #ef4444; }
+        .sidebar-btn { margin: 5px 10px; padding: 10px; border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9rem; text-align: center; display: block; width: calc(100% - 20px); }
+        .btn-add { background: var(--accent); } .btn-settings { background: #334155; } .btn-logout { background: transparent; border: 1px solid #ef4444; color: #ef4444; margin-top: auto; }
+        .main { flex: 1; padding: 20px; overflow-y: auto; position: relative; width: 100%; }
+        .container { max-width: 900px; margin: 0 auto; padding-bottom: 50px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: var(--card); padding: 15px; border-radius: 10px; border: 1px solid #334155; flex-wrap: wrap; gap: 10px; }
+        .current-bot-name { font-size: 1.3rem; font-weight: bold; margin: 0; word-break: break-word; }
+        .power-btn { padding: 8px 16px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .power-on { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid #22c55e; }
+        .power-off { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+        .nav { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; -webkit-overflow-scrolling: touch; }
+        .nav-btn { background: var(--card); border: 1px solid #334155; color: #94a3b8; padding: 10px 15px; cursor: pointer; border-radius: 8px; flex: none; font-weight: bold; font-size: 0.9rem; white-space: nowrap; }
+        .nav-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .section { display: none; } .section.active { display: block; }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #334155; }
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: 600; color: #cbd5e1; font-size: 0.9em; }
-        input, select, textarea { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 5px; box-sizing: border-box; }
-        textarea { resize: vertical; min-height: 100px; font-family: monospace; }
-        .row { display: flex; gap: 15px; flex-wrap: wrap; }
-        .col { flex: 1; min-width: 200px; }
-        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s;}
-        .btn:hover { opacity: 0.9; }
-        .btn-primary { background: var(--accent); width: 100%; margin-top: 15px; padding: 12px; font-size: 1rem; }
-        .btn-select { background: #475569; margin-top: 5px; width: 100%; font-size: 0.85em; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: #cbd5e1; font-size: 0.85rem; }
+        input, select, textarea { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        input:focus, select:focus, textarea:focus { font-size: 16px; } 
+        .row { display: flex; gap: 15px; flex-wrap: wrap; } .col { flex: 1; min-width: 100%; } 
+        .btn { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; font-size: 0.95rem; }
+        .btn-primary { background: var(--accent); width: 100%; margin-top: 10px; }
+        .btn-danger { background: #ef4444; }
         .switch-row { display: flex; align-items: center; justify-content: space-between; background: #334155; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
-        input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; }
-        .log-list { max-height: 400px; overflow-y: auto; }
-        .log-item { background: #0f172a; padding: 12px; margin-bottom: 8px; border-left: 4px solid var(--accent); border-radius: 4px; }
-        .log-meta { font-size: 0.8rem; color: #94a3b8; display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .log-content { font-size: 0.95rem; color: #fff; }
-        .log-user { color: #f59e0b; font-weight: bold; }
-        .img-preview-box { width: 80px; height: 80px; background: #000; border-radius: 8px; margin-top: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #475569; flex-shrink: 0; }
-        .img-preview-box img { max-width: 100%; max-height: 100%; object-fit: cover; }
-        
-        /* TIMER STYLE */
-        .voice-timer { font-size: 1.2rem; font-weight: bold; color: #22c55e; background: rgba(34, 197, 94, 0.1); padding: 10px; border-radius: 8px; text-align: center; margin-top: 15px; border: 1px solid rgba(34, 197, 94, 0.3); }
-
-        /* MODAL STYLES (NEW) */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); z-index: 9999; align-items: center; justify-content: center; }
-        .modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 90%; max-width: 600px; max-height: 85vh; overflow-y: auto; position: relative; }
+        input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--accent); }
+        .mobile-menu-btn { display: none; background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 5px; }
+        .image-input-group { display: flex; align-items: flex-start; gap: 10px; }
+        .img-preview { width: 80px; height: 80px; background: #000; border: 1px solid #334155; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #64748b; font-size: 0.8rem; text-align: center; }
+        .img-preview img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .select-wrapper { position: relative; }
+        .select-wrapper::after { content: '▼'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #fff; font-size: 0.6rem; pointer-events: none; }
+        @media (min-width: 768px) { .col { min-width: 200px; } .mobile-menu-btn { display: none; } }
+        @media (max-width: 768px) { body { flex-direction: column; height: 100%; overflow: hidden; } .sidebar { position: fixed; top: 0; left: 0; height: 100%; width: 80%; max-width: 300px; transform: translateX(-100%); z-index: 1000; box-shadow: 2px 0 10px rgba(0,0,0,0.5); } .sidebar.open { transform: translateX(0); } .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; } .sidebar-overlay.active { display: block; } .main { width: 100%; padding: 10px; padding-top: 15px; } .container { padding-bottom: 80px; } .top-bar { flex-direction: row; align-items: center; padding: 10px; gap: 5px; } .top-bar div:first-child { flex: 1; overflow: hidden; } .current-bot-name { font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .mobile-menu-btn { display: block; margin-right: 10px; } }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; position: relative; }
         .close-btn { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; color: #fff; }
-        
-        .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 10px; }
-        .grid-item { cursor: pointer; border: 2px solid transparent; border-radius: 5px; overflow: hidden; position: relative; background: #000; }
+        .voice-timer { font-size: 1.2rem; font-weight: bold; color: #22c55e; background: rgba(34, 197, 94, 0.1); padding: 10px; border-radius: 8px; text-align: center; margin-top: 15px; border: 1px solid rgba(34, 197, 94, 0.3); }
+        .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 10px; }
+        .grid-item { cursor: pointer; border: 2px solid transparent; border-radius: 5px; overflow: hidden; position: relative; background: #000; aspect-ratio: 1; }
         .grid-item:hover { border-color: var(--accent); }
-        .grid-item img { width: 100%; height: 80px; object-fit: cover; display: block; }
-        .grid-item p { margin: 0; font-size: 0.7rem; text-align: center; padding: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        
-        .delete-btn { position: absolute; top: 2px; right: 2px; background: rgba(239, 68, 68, 0.9); color: white; border: none; border-radius: 3px; width: 20px; height: 20px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
-        .delete-btn:hover { background: #ff0000; }
-
-        .modal-section-title { font-size: 0.9rem; color: #94a3b8; margin-top: 15px; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+        .grid-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .grid-item p { position: absolute; bottom:0; left:0; width:100%; margin: 0; font-size: 0.6rem; text-align: center; padding: 2px; background: rgba(0,0,0,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .delete-btn-img { position: absolute; top: 2px; right: 2px; background: rgba(239, 68, 68, 0.9); color: white; border: none; border-radius: 3px; width: 20px; height: 20px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h2 style="margin:0">🎛️ SelfBot Control</h2>
-            <button id="powerBtn" class="power-btn power-off" onclick="togglePower()">OFFLINE</button>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header"><span>🤖 Manager</span><button onclick="toggleSidebar()" style="background:none; border:none; color:#94a3b8; font-size:1.5rem; cursor:pointer;" class="mobile-only">×</button></div>
+    <button class="sidebar-btn btn-add" onclick="createAccount()">+ Thêm Tài Khoản</button>
+    <button class="sidebar-btn btn-settings" onclick="openSystemSettings()">⚙️ Cài đặt hệ thống</button>
+    <div id="accountList" class="account-list"></div>
+    <button class="sidebar-btn btn-logout" onclick="logout()">Đăng xuất</button>
+</div>
+
+<div class="main">
+    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+        <h3 style="margin:0" id="mobileHeaderTitle">Chọn Bot để bắt đầu</h3>
+    </div>
+
+    <div class="container" id="mainContainer" style="display:none;">
+        <div class="top-bar">
+            <div><h2 id="displayBotName" class="current-bot-name">Bot Name</h2><small id="displayBotId" style="color:#64748b; font-size: 0.75rem;">ID: ...</small></div>
+            <div style="display:flex; gap:8px;"><button id="powerBtn" class="power-btn" onclick="togglePower()">...</button><button class="btn btn-danger" onclick="deleteAccount()" style="padding: 8px 12px;">🗑️</button></div>
         </div>
-        
+
         <div class="nav">
             <button class="nav-btn active" onclick="showTab('rpc')">RPC</button>
             <button class="nav-btn" onclick="showTab('voice')">Voice</button>
-            <button class="nav-btn" onclick="showTab('autochat')">Auto Chat</button>
-            <button class="nav-btn" onclick="showTab('afk')">AFK</button>
-            <button class="nav-btn" onclick="logout()" style="color: #ef4444; flex: 0;">Exit</button>
+            <button class="nav-btn" onclick="showTab('general')">General</button>
         </div>
 
         <div id="rpc" class="section active">
             <div class="card">
-                <div class="switch-row"><span>Bật trạng thái RPC</span><input type="checkbox" id="enabled"></div>
-                <div class="row"><div class="col"><label>Loại</label><select id="type"><option value="PLAYING">Playing</option><option value="STREAMING">Streaming</option><option value="LISTENING">Listening</option><option value="WATCHING">Watching</option><option value="COMPETING">Competing</option></select></div><div class="col"><label>Tên</label><input type="text" id="name"></div></div>
-                <div class="row" style="margin-top: 10px;"><div class="col"><label>Chi tiết</label><input type="text" id="details"></div><div class="col"><label>Trạng thái</label><input type="text" id="state"></div></div>
-                <div class="switch-row" style="margin-top: 15px;"><span>⏳ Timestamp</span><input type="checkbox" id="startTimestamp"></div>
+                <div class="switch-row"><span>Bật RPC</span><input type="checkbox" id="enabled"></div>
+                <div class="form-group"><label style="color:#f59e0b">Application ID (Nếu dùng Asset Key)</label><input type="text" id="applicationId" placeholder="Lấy từ Dev Portal (Optional)" oninput="updateImageLabels()"></div>
+                <div class="row"><div class="col"><label>Loại</label><div class="select-wrapper"><select id="type"><option value="PLAYING">Playing</option><option value="STREAMING">Streaming</option><option value="LISTENING">Listening</option><option value="WATCHING">Watching</option><option value="COMPETING">Competing</option></select></div></div><div class="col"><label>Tên</label><input type="text" id="name" placeholder="Tên hoạt động"></div></div>
+                <div class="row" style="margin-top:10px"><div class="col"><label>Chi tiết</label><input type="text" id="details"></div><div class="col"><label>Trạng thái</label><input type="text" id="state"></div></div>
+                <div class="row" style="margin-top:10px">
+                    <div class="col"><label id="lblLargeImage">Large Image (URL/Key)</label><div class="image-input-group"><div style="flex:1"><div style="display:flex; gap:5px"><input type="text" id="largeImage" oninput="updatePreview('largeImage')" placeholder="Link ảnh hoặc Key"><button class="btn" style="padding:12px; background:#475569" onclick="openImageSelector('largeImage')">📂</button></div><input type="text" id="largeText" placeholder="Large Text" style="margin-top:5px"></div><div class="img-preview"><img id="preview-largeImage"></div></div></div>
+                    <div class="col"><label id="lblSmallImage">Small Image (URL/Key)</label><div class="image-input-group"><div style="flex:1"><div style="display:flex; gap:5px"><input type="text" id="smallImage" oninput="updatePreview('smallImage')" placeholder="Link ảnh hoặc Key"><button class="btn" style="padding:12px; background:#475569" onclick="openImageSelector('smallImage')">📂</button></div><input type="text" id="smallText" placeholder="Small Text" style="margin-top:5px"></div><div class="img-preview"><img id="preview-smallImage"></div></div></div>
+                </div>
+                <button class="btn btn-primary" onclick="saveConfig()">Lưu RPC</button>
             </div>
-            <div class="card">
-                <h4 style="margin-top:0">🖼️ Hình ảnh</h4>
-                <div class="row" style="align-items: center;"><div class="col"><label>Ảnh Lớn</label><input type="text" id="largeImage"><input type="text" id="largeText" placeholder="Tooltip" style="margin-top:5px"><button class="btn btn-select" onclick="openImageSelector('largeImage')">📂 Quản lý & Chọn ảnh</button></div><div class="img-preview-box"><img id="preview-largeImage"></div></div>
-                <hr style="border-color: #334155; margin: 15px 0;">
-                <div class="row" style="align-items: center;"><div class="col"><label>Ảnh Nhỏ</label><input type="text" id="smallImage"><input type="text" id="smallText" placeholder="Tooltip" style="margin-top:5px"><button class="btn btn-select" onclick="openImageSelector('smallImage')">📂 Quản lý & Chọn ảnh</button></div><div class="img-preview-box"><img id="preview-smallImage"></div></div>
-            </div>
+            
             <div class="card">
                 <h4 style="margin-top:0">🔘 Nút bấm</h4>
-                <div class="row"><div class="col"><label>Nút 1 Tên</label><input type="text" id="button1Label"></div><div class="col"><label>Nút 1 Link</label><input type="text" id="button1URL"></div></div>
-                <div class="row" style="margin-top:10px"><div class="col"><label>Nút 2 Tên</label><input type="text" id="button2Label"></div><div class="col"><label>Nút 2 Link</label><input type="text" id="button2URL"></div></div>
+                <div class="row"><div class="col"><label>Nút 1 Tên</label><input type="text" id="button1Label"></div><div class="col"><label>Nút 1 Link (Bắt buộc)</label><input type="text" id="button1URL"></div></div>
+                <div class="row" style="margin-top:10px"><div class="col"><label>Nút 2 Tên</label><input type="text" id="button2Label"></div><div class="col"><label>Nút 2 Link (Bắt buộc)</label><input type="text" id="button2URL"></div></div>
             </div>
-            <button class="btn btn-primary" onclick="saveConfig()">💾 LƯU RPC</button>
         </div>
 
         <div id="voice" class="section">
-            <div class="card" style="border: 1px solid #f59e0b;">
-                <h3 style="margin-top:0; color:#f59e0b">🔑 Token</h3>
-                <div class="form-group"><div style="display:flex; gap:10px;"><input type="password" id="token" placeholder="Dán Token vào đây..."><button class="btn" style="background: #334155; width: 50px;" onclick="toggleTokenVisibility()">👁️</button></div></div>
-            </div>
             <div class="card">
-                <h3 style="margin-top:0">🔊 Voice & Camera</h3>
-                <div class="switch-row"><span>Tự động vào Voice</span><input type="checkbox" id="voiceEnabled"></div>
+                <div class="switch-row"><span>Auto Join Voice</span><input type="checkbox" id="voiceEnabled"></div>
                 <div class="row"><div class="col"><label>Guild ID</label><input type="text" id="voiceGuildId"></div><div class="col"><label>Channel ID</label><input type="text" id="voiceChannelId"></div></div>
-                <div class="switch-row" style="margin-top:15px"><span>🎥 Bật Camera ảo</span><input type="checkbox" id="voiceVideo"></div>
+                <div class="switch-row" style="margin-top:10px"><span>Camera ảo</span><input type="checkbox" id="voiceVideo"></div>
                 <div id="voiceTimerContainer" style="display:none;"><div class="voice-timer">⏱️ Treo: <span id="voiceTimer">00:00:00</span></div></div>
-                <button class="btn btn-primary" onclick="saveConfig()">💾 LƯU VOICE</button>
-            </div>
-            <div class="card">
-                 <h3 style="margin-top:0">📱 Thiết bị</h3>
-                 <div class="row"><button class="btn" style="background:#22c55e; flex:1" onclick="switchDevice('mobile')">Mobile 📱</button><button class="btn" style="background:#3b82f6; flex:1" onclick="switchDevice('desktop')">Desktop 💻</button></div>
+                <button class="btn btn-primary" onclick="saveConfig()">Lưu Voice</button>
             </div>
         </div>
 
-        <div id="autochat" class="section">
+        <div id="general" class="section">
             <div class="card">
-                <h3 style="margin-top:0">💬 Auto Chat</h3>
-                <div class="switch-row"><span>Bật Auto Chat</span><input type="checkbox" id="autoChatEnabled"></div>
-                <div class="form-group"><label>ID Kênh Chat</label><input type="text" id="autoChatChannelId" placeholder="Nhập ID kênh..."></div>
-                <div class="form-group"><label>Thời gian chờ (Giây)</label><input type="number" id="autoChatInterval" min="2" value="5"></div>
-                <div class="form-group"><label>Nội dung (Mỗi dòng 1 câu)</label><textarea id="autoChatContent" placeholder="Nhập nội dung..."></textarea></div>
-                <button class="btn btn-primary" onclick="saveConfig()">💾 LƯU AUTO CHAT</button>
-            </div>
-        </div>
-
-        <div id="afk" class="section">
-            <div class="card">
-                <h3 style="margin-top:0">💤 Cấu hình AFK</h3>
-                <div class="switch-row"><span>Bật trả lời tự động</span><input type="checkbox" id="afkEnabled"></div>
-                <div class="form-group"><label>Tin nhắn trả lời</label><textarea id="afkMessage" rows="3"></textarea></div>
-                <button class="btn btn-primary" onclick="saveConfig()">💾 LƯU AFK</button>
-            </div>
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px"><h3 style="margin:0">📝 Nhật ký Tag</h3><button class="btn" style="background:#ef4444; padding:5px 10px; font-size:0.8rem" onclick="clearLogs()">🗑️ Xóa sạch</button></div>
-                <div id="logList" class="log-list"><div style="color:#64748b; text-align:center;">Đang tải...</div></div>
+                <h3 style="margin-top:0">Cấu hình chung</h3>
+                <div class="form-group"><label>Tên hiển thị</label><input type="text" id="botNameConfig"></div>
+                <div class="form-group"><label style="color:#f59e0b">Token</label><input type="password" id="token"></div>
+                <div class="form-group"><label>Trạng thái thiết bị</label><div class="select-wrapper"><select id="deviceType"><option value="desktop">Desktop</option><option value="mobile">Mobile</option><option value="web">Web</option></select></div></div>
+                <div class="switch-row"><span>Auto Chat</span><input type="checkbox" id="autoChatEnabled"></div>
+                <div class="form-group"><label>Kênh Chat ID</label><input type="text" id="autoChatChannelId"></div>
+                <button class="btn btn-primary" onclick="saveConfig()">Lưu Cấu Hình</button>
             </div>
         </div>
     </div>
+    <div id="welcomeMsg" style="text-align:center; margin-top:50px; color:#64748b; padding: 20px;"><h2>Chào mừng!</h2><p>Bấm nút ☰ bên trên để chọn Bot.</p></div>
+</div>
 
-    <div id="imageModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
-            <h3 style="margin-top:0">📂 Thư viện ảnh</h3>
-            
-            <div style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid #334155; padding-bottom:15px;">
-                <input type="text" id="newImageUrl" placeholder="Dán link ảnh online (https://...) vào đây">
-                <button class="btn" style="background:var(--accent); width: 100px;" onclick="saveNewUrl()">➕ Lưu</button>
-            </div>
-
-            <div class="modal-section-title">☁️ Ảnh đã lưu (Saved URLs)</div>
-            <div id="saved-grid" class="image-grid"><p style="color:#64748b; font-size:0.8rem">Chưa có ảnh nào.</p></div>
-
-            <div class="modal-section-title" style="margin-top:20px">💻 Ảnh trong máy (Local Files)</div>
-            <div id="local-grid" class="image-grid"><p style="color:#64748b; font-size:0.8rem">Thư mục trống.</p></div>
-        </div>
+<div id="systemModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="document.getElementById('systemModal').style.display='none'">&times;</span>
+        <h3 style="margin-top:0">⚙️ Cài đặt hệ thống</h3>
+        <div class="form-group"><label>Webhook URL</label><input type="text" id="sysWebhook"></div>
+        <div style="display:flex; gap:10px"><button class="btn btn-primary" onclick="saveSystemSettings(false)">Lưu</button><button class="btn" style="background:#334155; margin-top:10px" onclick="saveSystemSettings(true)">Lưu & Test</button></div>
     </div>
+</div>
 
-    <script>
-        let currentTargetInput = null;
-        let isBotRunning = false;
-        let voiceJoinTime = null;
-        let timerInterval = null;
+<div id="imageModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="document.getElementById('imageModal').style.display='none'">&times;</span>
+        <h3 style="margin-top:0">Chọn ảnh</h3>
+        <div style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid #334155; padding-bottom:15px;">
+            <input type="text" id="newImageUrl" placeholder="Link ảnh online (https://...)">
+            <button class="btn" style="background:var(--accent); width: 80px; padding: 10px;" onclick="saveNewUrl()">➕</button>
+        </div>
+        <div style="font-size:0.8rem; color:#94a3b8">Đã lưu</div><div id="saved-grid" class="image-grid"></div>
+        <div style="font-size:0.8rem; color:#94a3b8; margin-top:15px">Trong máy</div><div id="local-grid" class="image-grid"></div>
+    </div>
+</div>
 
-        const configKeys = ['token','type','name','details','state','largeImage','largeText','smallImage','smallText','button1Label','button1URL','button2Label','button2URL','voiceGuildId','voiceChannelId','afkMessage','autoChatChannelId','autoChatInterval','autoChatContent'];
-        const checkboxKeys = ['enabled','startTimestamp','voiceEnabled','voiceVideo','afkEnabled','autoChatEnabled'];
+<script>
+    let currentAccountId = null;
+    let currentBotRunning = false;
+    let voiceJoinTime = null;
+    let timerInterval = null;
+    let currentTargetInput = null;
+    let pollInterval = null;
 
-        async function loadData() {
-            try {
-                const res = await fetch('/api/config');
-                if(res.status === 401) return window.location.href = '/login.html';
-                const config = await res.json();
-                
-                isBotRunning = config.isRunning;
-                voiceJoinTime = config.voiceJoinedAt;
-                
+    const inputs = ['token','name','type','details','state','largeImage','largeText','smallImage','smallText','button1Label','button1URL','button2Label','button2URL','voiceGuildId','voiceChannelId','autoChatChannelId', 'deviceType', 'applicationId'];
+    const checks = ['enabled','voiceEnabled','voiceVideo','autoChatEnabled'];
+
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
+
+    async function loadAccounts() {
+        const res = await fetch('/api/accounts');
+        if(res.status === 401) return window.location.href = '/login.html';
+        const list = await res.json();
+        document.getElementById('accountList').innerHTML = list.map(bot => `<div class="account-item ${bot.id === currentAccountId ? 'active' : ''}" onclick="selectAccount('${bot.id}')"><div class="acc-avatar">${bot.name.substring(0,2).toUpperCase()}</div><div class="acc-info"><div class="acc-name">${bot.name}</div><div class="acc-status"><span class="status-dot ${bot.isRunning ? 'dot-green' : 'dot-red'}"></span>${bot.isRunning ? 'Online' : 'Offline'}</div></div></div>`).join('');
+        
+        if(currentAccountId) {
+            const currentBot = list.find(b => b.id === currentAccountId);
+            if(currentBot && currentBot.isRunning !== currentBotRunning) {
+                currentBotRunning = currentBot.isRunning;
                 updatePowerBtn();
-                startVoiceTimer();
-
-                configKeys.forEach(k => { if(document.getElementById(k)) document.getElementById(k).value = config[k] || ''; });
-                checkboxKeys.forEach(k => { if(document.getElementById(k)) document.getElementById(k).checked = !!config[k]; });
-
-                updatePreview('largeImage'); updatePreview('smallImage');
-                loadLogs();
-            } catch(e) {}
-        }
-
-        // --- TIMER LOGIC ---
-        function startVoiceTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-            const container = document.getElementById('voiceTimerContainer');
-            const timerEl = document.getElementById('voiceTimer');
-
-            if (!voiceJoinTime || !isBotRunning) { container.style.display = 'none'; return; }
-
-            container.style.display = 'block';
-            timerInterval = setInterval(() => {
-                const diff = Date.now() - voiceJoinTime;
-                const seconds = Math.floor((diff / 1000) % 60);
-                const minutes = Math.floor((diff / (1000 * 60)) % 60);
-                const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-                let timeString = '';
-                if (days > 0) timeString = `${days} ngày ${hours} giờ ${minutes} phút`;
-                else if (hours > 0) timeString = `${hours} giờ ${minutes} phút ${seconds} giây`;
-                else if (minutes > 0) timeString = `${minutes} phút ${seconds} giây`;
-                else timeString = `${seconds} giây`;
-                timerEl.innerText = timeString;
-            }, 1000);
-        }
-
-        function updatePowerBtn() {
-            const btn = document.getElementById('powerBtn');
-            if (isBotRunning) { btn.className = 'power-btn power-on'; btn.innerText = '🟢 ONLINE'; } 
-            else { btn.className = 'power-btn power-off'; btn.innerText = '🔴 OFFLINE'; }
-        }
-
-        async function togglePower() {
-            const action = isBotRunning ? 'stop' : 'start';
-            if(!confirm(`Bạn có chắc muốn ${action === 'stop' ? 'TẮT' : 'BẬT'} Bot không?`)) return;
-            const btn = document.getElementById('powerBtn'); btn.innerText = '...';
-            await fetch('/api/power', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action }) });
-            setTimeout(() => location.reload(), 2000);
-        }
-
-        async function loadLogs() {
-            try {
-                const res = await fetch('/api/afklogs');
-                const logs = await res.json();
-                const container = document.getElementById('logList');
-                if(logs.length === 0) { container.innerHTML = '<div style="color:#64748b; text-align:center;">Chưa có log nào.</div>'; return; }
-                container.innerHTML = logs.map(log => `<div class="log-item"><div class="log-meta"><span>🕒 ${log.time}</span><span>${log.server}</span></div><div class="log-content"><span class="log-user">${log.user}</span>: ${log.content}</div></div>`).join('');
-            } catch(e) {}
-        }
-        async function clearLogs() { if(!confirm("Xóa hết log?")) return; await fetch('/api/afklogs', { method: 'DELETE' }); loadLogs(); }
-
-        function updatePreview(type) { const val = document.getElementById(type).value; const img = document.getElementById('preview-' + type); if(val) { img.src = val; img.style.display = 'block'; } else { img.style.display = 'none'; } }
-        
-        // --- IMAGE MANAGER LOGIC ---
-        async function openImageSelector(target) {
-            currentTargetInput = target;
-            const modal = document.getElementById('imageModal');
-            modal.style.display = 'flex';
-            loadImages();
-        }
-
-        async function loadImages() {
-            const savedGrid = document.getElementById('saved-grid');
-            const localGrid = document.getElementById('local-grid');
-            savedGrid.innerHTML = 'Loading...'; localGrid.innerHTML = 'Loading...';
-
-            try {
-                const res = await fetch('/api/images');
-                const data = await res.json();
-
-                // Render Saved URLs
-                if(data.savedUrls.length === 0) savedGrid.innerHTML = '<p style="color:#64748b; font-size:0.8rem">Chưa lưu ảnh nào.</p>';
-                else {
-                    savedGrid.innerHTML = data.savedUrls.map(url => `
-                        <div class="grid-item">
-                            <button class="delete-btn" onclick="deleteUrl('${url}'); event.stopPropagation();">×</button>
-                            <div onclick="selectImage('${url}')">
-                                <img src="${url}">
-                                <p>${url}</p>
-                            </div>
-                        </div>
-                    `).join('');
+                if(currentBotRunning) {
+                    const detailRes = await fetch(`/api/accounts/${currentAccountId}`);
+                    const detailData = await detailRes.json();
+                    voiceJoinTime = detailData.voiceJoinedAt;
+                    startVoiceTimer();
                 }
-
-                // Render Local Files
-                if(data.local.length === 0) localGrid.innerHTML = '<p style="color:#64748b; font-size:0.8rem">Thư mục rpc_images trống.</p>';
-                else {
-                    localGrid.innerHTML = data.local.map(img => {
-                        const url = window.location.origin + '/images/' + img;
-                        return `<div class="grid-item" onclick="selectImage('${url}')"><img src="${url}"><p>${img}</p></div>`;
-                    }).join('');
-                }
-
-            } catch(e) { console.error(e); }
+            }
         }
+    }
 
-        async function saveNewUrl() {
-            const url = document.getElementById('newImageUrl').value;
-            if(!url) return alert("Chưa nhập link!");
-            await fetch('/api/images/url', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ url }) });
-            document.getElementById('newImageUrl').value = '';
-            loadImages();
-        }
+    async function createAccount() { await fetch('/api/accounts/create', { method: 'POST' }); loadAccounts(); }
 
-        async function deleteUrl(url) {
-            if(!confirm("Xóa ảnh này khỏi danh sách lưu?")) return;
-            await fetch('/api/images/url', { method: 'DELETE', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ url }) });
-            loadImages();
-        }
-
-        function selectImage(url) { if(currentTargetInput) { document.getElementById(currentTargetInput).value = url; updatePreview(currentTargetInput); } closeModal(); }
-        function closeModal() { document.getElementById('imageModal').style.display = 'none'; }
-
-        async function saveConfig() {
-            const data = {};
-            configKeys.forEach(k => data[k] = document.getElementById(k).value);
-            checkboxKeys.forEach(k => data[k] = document.getElementById(k).checked);
-            await fetch('/api/config', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
-            alert('✅ Đã lưu!');
-            loadData();
-        }
-
-        function showTab(id) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); event.currentTarget.classList.add('active'); }
-        async function switchDevice(type) { if(confirm("Bot sẽ restart. OK?")) { await fetch('/api/device', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({deviceType: type}) }); setTimeout(() => location.reload(), 3000); } }
-        async function logout() { await fetch('/api/logout', { method: 'POST' }); window.location.href = '/login.html'; }
-        function toggleTokenVisibility() { const el = document.getElementById('token'); el.type = el.type === 'password' ? 'text' : 'password'; }
+    async function selectAccount(id) {
+        currentAccountId = id;
+        document.getElementById('welcomeMsg').style.display = 'none';
+        document.getElementById('mainContainer').style.display = 'block';
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('active');
         
-        document.getElementById('largeImage').oninput = () => updatePreview('largeImage'); document.getElementById('smallImage').oninput = () => updatePreview('smallImage'); window.onclick = e => { if(e.target == document.getElementById('imageModal')) closeModal(); }
-        loadData();
-    </script>
+        loadAccounts();
+        const res = await fetch(`/api/accounts/${id}`);
+        const data = await res.json();
+        
+        document.getElementById('displayBotName').innerText = data.name || 'Unnamed';
+        document.getElementById('mobileHeaderTitle').innerText = data.name || 'Manager';
+        document.getElementById('displayBotId').innerText = 'ID: ' + id;
+        document.getElementById('botNameConfig').value = data.name || '';
+        
+        inputs.forEach(k => { if(document.getElementById(k)) { if(k === 'deviceType' && !data[k]) document.getElementById(k).value = 'desktop'; else document.getElementById(k).value = data[k] || ''; } });
+        checks.forEach(k => { if(document.getElementById(k)) document.getElementById(k).checked = !!data[k]; });
+
+        currentBotRunning = data.isRunning;
+        voiceJoinTime = data.voiceJoinedAt;
+        updatePowerBtn();
+        startVoiceTimer();
+        updatePreview('largeImage'); updatePreview('smallImage');
+        updateImageLabels();
+        
+        if(pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(loadAccounts, 2000);
+    }
+
+    function updateImageLabels() {
+        const appId = document.getElementById('applicationId').value;
+        const lblLarge = document.getElementById('lblLargeImage');
+        const lblSmall = document.getElementById('lblSmallImage');
+        if (appId && appId.trim() !== '') {
+            lblLarge.innerText = "Large Asset Key (Tên ảnh)";
+            lblSmall.innerText = "Small Asset Key (Tên ảnh)";
+        } else {
+            lblLarge.innerText = "Large Image (Link URL)";
+            lblSmall.innerText = "Small Image (Link URL)";
+        }
+    }
+
+    function updatePreview(type) {
+        const val = document.getElementById(type).value;
+        const previewDiv = document.querySelector(`#${type}`).closest('.image-input-group').querySelector('.img-preview');
+        const img = document.getElementById('preview-' + type);
+        
+        const appId = document.getElementById('applicationId').value;
+        if(appId && appId.trim() !== '') {
+            img.style.display = 'none'; 
+            previewDiv.innerText = 'Key: ' + val;
+        } else {
+            if(val) { img.src = val; img.onload = () => { img.style.display = 'block'; previewDiv.innerText = ''; }; img.onerror = () => { img.style.display = 'none'; previewDiv.innerText = '❌ Link Die'; } } 
+            else { img.style.display = 'none'; previewDiv.innerText = 'Preview'; }
+        }
+    }
+
+    async function saveConfig() {
+        if(!currentAccountId) return;
+        const data = { name: document.getElementById('botNameConfig').value };
+        inputs.forEach(k => data[k] = document.getElementById(k).value);
+        checks.forEach(k => data[k] = document.getElementById(k).checked);
+        await fetch(`/api/accounts/${currentAccountId}/config`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        alert('Đã lưu!');
+        selectAccount(currentAccountId);
+    }
+
+    async function togglePower() {
+        if(!currentAccountId) return;
+        const action = currentBotRunning ? 'stop' : 'start';
+        document.getElementById('powerBtn').innerText = '...';
+        
+        const tempConfig = {};
+        if (action === 'start') {
+            inputs.forEach(k => tempConfig[k] = document.getElementById(k).value);
+            checks.forEach(k => tempConfig[k] = document.getElementById(k).checked);
+        }
+
+        try {
+            const res = await fetch(`/api/accounts/${currentAccountId}/power`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action, tempConfig }) });
+            const data = await res.json();
+            if (action === 'start' && !data.isRunning) alert(data.message || "Lỗi. Kiểm tra Token!");
+            currentBotRunning = data.isRunning;
+            updatePowerBtn();
+            loadAccounts();
+        } catch(e) { alert("Mất kết nối!"); }
+    }
+
+    function updatePowerBtn() { const btn = document.getElementById('powerBtn'); if(currentBotRunning) { btn.className = 'power-btn power-on'; btn.innerText = 'ONLINE'; } else { btn.className = 'power-btn power-off'; btn.innerText = 'OFFLINE'; } }
+
+    function startVoiceTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        const container = document.getElementById('voiceTimerContainer');
+        const timerEl = document.getElementById('voiceTimer');
+        if (!voiceJoinTime || !currentBotRunning) { container.style.display = 'none'; return; }
+        container.style.display = 'block';
+        timerInterval = setInterval(() => {
+            const diff = Date.now() - voiceJoinTime;
+            const seconds = Math.floor((diff / 1000) % 60);
+            const minutes = Math.floor((diff / (1000 * 60)) % 60);
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            let str = '';
+            if (days > 0) str = `${days}d ${hours}h ${minutes}m`;
+            else if (hours > 0) str = `${hours}h ${minutes}m ${seconds}s`;
+            else str = `${minutes}m ${seconds}s`;
+            timerEl.innerText = str;
+        }, 1000);
+    }
+
+    async function openSystemSettings() {
+        const res = await fetch('/api/system');
+        const data = await res.json();
+        document.getElementById('sysWebhook').value = data.webhookUrl || '';
+        document.getElementById('systemModal').style.display = 'flex';
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('active');
+    }
+    async function saveSystemSettings(test) {
+        const url = document.getElementById('sysWebhook').value;
+        await fetch('/api/system', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ webhookUrl: url, test: test }) });
+        alert(test ? 'Đã lưu và gửi tin test!' : 'Đã lưu cài đặt!');
+        document.getElementById('systemModal').style.display = 'none';
+    }
+
+    async function openImageSelector(target) {
+        currentTargetInput = target;
+        document.getElementById('imageModal').style.display = 'flex';
+        const res = await fetch('/api/images');
+        const data = await res.json();
+        const savedHtml = data.savedUrls.length ? data.savedUrls.map(url => `<div class="grid-item"><button class="delete-btn-img" onclick="deleteUrl('${url}'); event.stopPropagation();">×</button><div onclick="selectImage('${url}')"><img src="${url}"><p>URL</p></div></div>`).join('') : '<p style="color:#64748b; font-size:0.8rem">Trống.</p>';
+        document.getElementById('saved-grid').innerHTML = savedHtml;
+        const localHtml = data.local.length ? data.local.map(img => `<div class="grid-item" onclick="selectImage('${window.location.origin}/images/${img}')"><img src="/images/${img}"><p>${img}</p></div>`).join('') : '<p style="color:#64748b; font-size:0.8rem">Trống.</p>';
+        document.getElementById('local-grid').innerHTML = localHtml;
+    }
+
+    async function saveNewUrl() {
+        const url = document.getElementById('newImageUrl').value;
+        if(!url) return alert("Chưa nhập link!");
+        await fetch('/api/images/url', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ url }) });
+        document.getElementById('newImageUrl').value = '';
+        openImageSelector(currentTargetInput);
+    }
+    async function deleteUrl(url) {
+        if(!confirm("Xóa?")) return;
+        await fetch('/api/images/url', { method: 'DELETE', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ url }) });
+        openImageSelector(currentTargetInput);
+    }
+    function selectImage(url) { document.getElementById(currentTargetInput).value = url; updatePreview(currentTargetInput); document.getElementById('imageModal').style.display='none'; }
+
+    async function deleteAccount() { if(confirm("Xóa?")) { await fetch(`/api/accounts/${currentAccountId}`, { method: 'DELETE' }); location.reload(); } }
+    async function logout() { await fetch('/api/logout', { method: 'POST' }); location.href = '/login.html'; }
+    function showTab(id) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); event.currentTarget.classList.add('active'); }
+    
+    document.getElementById('largeImage').oninput = () => updatePreview('largeImage');
+    document.getElementById('smallImage').oninput = () => updatePreview('smallImage');
+
+    loadAccounts();
+    
+    // Xóa Log Rác (Nút ẩn)
+    async function clearTrashLogs() { await fetch('/api/afklogs', { method: 'DELETE' }); location.reload(); }
+</script>
+
 </body>
 </html>
