@@ -1,6 +1,7 @@
-/* index.js - V18 FINAL (Fix Multi-Account Voice Join) */
+/* index.js - V18 FINAL (Optimized RAM Usage) */
 
-const { Client, WebhookClient } = require('discord.js-selfbot-v13');
+// THÊM: Import Options để cấu hình Cache
+const { Client, WebhookClient, Options } = require('discord.js-selfbot-v13');
 const { joinVoiceChannel } = require('@discordjs/voice');
 const express = require('express');
 const cookieParser = require('cookie-parser');
@@ -89,7 +90,31 @@ class BotSession {
         if (this.client) await this.stop();
         if (!this.config.token) { this.statusMessage = "Thiếu Token"; return; }
 
-        this.client = new Client({ checkUpdate: false });
+        // 🔥 FIX RAM: Cấu hình giới hạn Cache tối đa
+        this.client = new Client({ 
+            checkUpdate: false,
+            // Chỉ định những gì cần lưu vào RAM
+            makeCache: Options.cacheWithLimits({
+                MessageManager: 20, // Chỉ lưu 20 tin nhắn gần nhất để check AFK/Reply
+                PresenceManager: 0, // Không lưu trạng thái (Online/Idle...) của người khác
+                GuildMemberManager: 0, // Không lưu danh sách thành viên (Tốn RAM nhất)
+                UserManager: 0, // Không lưu User
+                ThreadMemberManager: 0, 
+                ReactionManager: 0, 
+                GuildScheduledEventManager: 0,
+                StageInstanceManager: 0,
+                VoiceStateManager: 0, // Không lưu trạng thái voice của người khác
+                // Giữ lại GuildManager và ChannelManager để bot hoạt động
+            }),
+            // Tự động quét dọn RAM mỗi 10 phút
+            sweepers: {
+                ...Options.defaultSweeperSettings,
+                messages: {
+                    interval: 600, // 600 giây = 10 phút
+                    lifetime: 600,
+                },
+            },
+        });
 
         this.client.on('ready', async () => {
             this.isRunning = true;
@@ -97,13 +122,13 @@ class BotSession {
             console.log(`[${this.config.name}] ✅ Online: ${this.client.user.tag}`);
             
             this.updateRPC();
-            // Delay nhẹ để tránh rate limit khi nhiều bot cùng vào voice
             setTimeout(() => this.connectVoice(), 1000); 
             this.startAutoChat();
         });
 
         this.client.on('voiceStateUpdate', async (o, n) => {
-            if (!this.client.user || o.member.id !== this.client.user.id) return;
+            if (!this.client.user || o.member?.id !== this.client.user.id) return;
+            // Nếu bot bị disconnect (channelId null) và đang bật voice
             if (!n.channelId && this.config.voiceEnabled) {
                 this.voiceJoinedAt = null;
                 setTimeout(() => this.connectVoice(), 5000);
@@ -123,7 +148,15 @@ class BotSession {
     async stop() {
         if (this.autoChatTimer) { clearInterval(this.autoChatTimer); this.autoChatTimer = null; }
         if (this.voiceConnection) { try{this.voiceConnection.destroy()}catch(e){}; this.voiceConnection = null; }
-        if (this.client) { try{this.client.destroy()}catch(e){}; this.client = null; }
+        
+        // Destroy client cẩn thận hơn
+        if (this.client) { 
+            try {
+                this.client.destroy(); 
+            } catch(e){}; 
+            this.client = null; 
+        }
+        
         this.isRunning = false;
         this.voiceJoinedAt = null;
         this.statusMessage = "Stopped";
@@ -140,7 +173,6 @@ class BotSession {
             const channel = guild?.channels.cache.get(this.config.voiceChannelId);
             if (!guild || !channel) return;
 
-            // 🔥 FIX: Thêm tham số GROUP để tách riêng kết nối cho từng bot
             this.voiceConnection = joinVoiceChannel({
                 channelId: channel.id, 
                 guildId: guild.id, 
@@ -148,7 +180,7 @@ class BotSession {
                 selfDeaf: false, 
                 selfMute: true, 
                 selfVideo: this.config.voiceVideo,
-                group: this.client.user.id // <--- QUAN TRỌNG NHẤT: Định danh riêng cho mỗi bot
+                group: this.client.user.id
             });
             
             this.voiceJoinedAt = Date.now();
